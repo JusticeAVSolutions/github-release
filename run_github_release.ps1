@@ -19,6 +19,12 @@ The user who owns SECURITY_TOKEN -- "javs-ci"
 .PARAMETER TAG
 The git tag which the release will be attached to -- "%system.build.number%"
 
+.PARAMETER FILE_PATH
+The directory where files to be attached are located. Defaults to '.'
+
+.PARAMETER FILE
+The file or files to be attached. Accepts wild cards, expanded by PowerShell
+
 #>
 
 [CmdletBinding()]
@@ -28,7 +34,8 @@ Param(
     [string]$USER = "JusticeAVSolutions",
     [string]$AUTH_USER = "javs-ci",
     [string]$TAG,
-    [string]$FILE
+    [string]$FILE_PATH = ".",
+    $FILE
 )
 
 
@@ -41,6 +48,7 @@ echo "SECURITY_TOKEN: $SECURITY_TOKEN"
 echo "USER: $USER"
 echo "AUTH_USER: $AUTH_USER"
 echo "TAG: $TAG"
+echo "FILE_PATH: $FILE_PATH"
 echo "FILE: $FILE"
 echo "REPO_NAME: $REPO_NAME"
 
@@ -48,7 +56,19 @@ echo "REPO_NAME: $REPO_NAME"
 echo "C:\github-release\github-release.exe release --security-token $SECURITY_TOKEN --user $USER --repo $REPO_NAME --tag $TAG"
 C:\github-release\github-release.exe release --security-token $SECURITY_TOKEN --user $USER --repo $REPO_NAME --tag $TAG
 
-# Attach file to release
-echo "C:\github-release\github-release.exe upload --security-token $SECURITY_TOKEN --auth-user $AUTH_USER --user $USER --repo $REPO_NAME --tag $TAG --name $FILE --file $FILE"
-C:\github-release\github-release.exe upload --security-token $SECURITY_TOKEN --auth-user $AUTH_USER --user $USER --repo $REPO_NAME --tag $TAG --name $FILE --file $FILE
+# Attach files to release
 
+foreach ($f in $FILE.split(",")) {
+    echo "f is $f"
+
+    Get-ChildItem "$FILE_PATH" -Filter "$f" |
+    ForEach-Object {
+        $SOURCE_FILE="$f"
+        $ATTACHMENT="$_"
+        echo "SOURCE_FILE: $SOURCE_FILE"
+        echo "ATTACHMENT: $ATTACHMENT"
+        echo "C:\github-release\github-release.exe upload --security-token $SECURITY_TOKEN --auth-user $AUTH_USER --user $USER --repo $REPO_NAME --tag $TAG --name $ATTACHMENT --file $SOURCE_FILE"
+        C:\github-release\github-release.exe upload --security-token $SECURITY_TOKEN --auth-user $AUTH_USER --user $USER --repo $REPO_NAME --tag $TAG --name $ATTACHMENT --file $SOURCE_FILE
+        sleep 3
+    }
+}
